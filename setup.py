@@ -9,14 +9,14 @@ from setuptools import setup, find_packages
 
 # Module Setup
 setup(
-    name="vide",
+    name="spectare",
     version="0.0.0",
     author="Jordan Welsman",
     author_email="jordan.welsman@outlook.com",
     description="A PyTorch visualisation and interpretability framework.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/JordanWelsman/vide",
+    url="https://github.com/JordanWelsman/spectare",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 1 - Planning",

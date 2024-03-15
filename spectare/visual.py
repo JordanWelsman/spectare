@@ -12,8 +12,10 @@ from matplotlib.pyplot import axis, tight_layout, savefig
 from networkx import DiGraph, draw_networkx_edges, draw_networkx_labels
 from networkx import draw_networkx_nodes, spring_layout
 
-# Set logging level
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set Logger and Logging Level
+# logger = logging.getLogger('Spectare')
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='spectare.log', level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 # Function Definitions
@@ -107,7 +109,7 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
                 node_name = f"a[{i}]"
             else:
                 node_name = f"a{j+1}[{i}]"
-            logging.debug(f"Adding node: {node_name}")
+            logger.debug(f"Adding node: {node_name}")
             
             # Center nodes vertically
             y_pos = -(j - (num_nodes[i] - 1) / 2.0 + (max_nodes - 1) / 2.0)
@@ -120,7 +122,7 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
                         g.add_edge(f"a[{i-1}]", node_name)
                     else:
                         g.add_edge(f"a{k+1}[{i-1}]", node_name)
-                    logging.debug(f"Adding edge: a{k+1}[{i-1}] -> {node_name}")
+                    logger.debug(f"Adding edge: a{k+1}[{i-1}] -> {node_name}")
 
     # Draw the graph
     for i, (nodes) in enumerate(g.nodes()):
@@ -128,14 +130,14 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
         draw_networkx_nodes(
             g, pos, nodelist=[nodes],
             node_size=2000, node_color=node_color)
-        logging.debug(f"Drawing node: {nodes}")
+        logger.debug(f"Drawing node: {nodes}")
     draw_networkx_labels(g, pos, font_size=8, font_color="black")
     for i, (from_node, to_node) in enumerate(g.edges()):
         node_color = calculate_color() if not colorblind else calculate_cb_color()
         draw_networkx_edges(
             g, pos, edgelist=[(from_node, to_node)],
             edge_color=node_color)
-        logging.debug(f"Drawing edge: {from_node} -> {to_node}")
+        logger.debug(f"Drawing edge: {from_node} -> {to_node}")
 
     # Set the axis and layout
     axis("off")
@@ -143,7 +145,7 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
 
     # Save the graph to an image file
     savefig(filename, dpi=300)
-    logging.info(f"Neural Network Graph saved to '{filename}'.")
+    logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
 def get_model_info(model) -> dict:

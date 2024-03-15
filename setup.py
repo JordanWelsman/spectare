@@ -5,6 +5,7 @@ Setup file for the package.
 
 # Module Imports
 from setuptools import setup, find_packages
+from spectare import __version__
 
 
 # Define list of submodules
@@ -13,7 +14,7 @@ py_modules = ["spectare"]
 # Module Setup
 setup(
     name="spectare",
-    version="0.0.0",
+    version=__version__,
     author="Jordan Welsman",
     author_email="jordan.welsman@outlook.com",
     description="A PyTorch visualisation and interpretability framework.",

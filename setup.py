@@ -7,6 +7,9 @@ Setup file for the package.
 from setuptools import setup, find_packages
 
 
+# Define list of submodules
+py_modules = ["spectare"]
+
 # Module Setup
 setup(
     name="spectare",
@@ -34,6 +37,9 @@ setup(
         "Topic :: Scientific/Engineering :: Visualization",
         "Topic :: Utilities"
     ],
+    package_data = {
+        'spectare': py_modules
+        },
     python_requires='>=3.10',
     install_requires=[
         "networkx>=3.2.1"

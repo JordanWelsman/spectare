@@ -3,7 +3,7 @@ Contains all functions related to visualizing neural networks.
 """
 
 # External Visibility
-__all__ = ["draw_random_network", "get_model_info"]
+__all__ = ["draw_random_network", "get_model_info", "get_model_params"]
 
 # Module imports
 import logging
@@ -15,7 +15,7 @@ from networkx import draw_networkx_nodes, spring_layout
 # Set Logger and Logging Level
 # logger = logging.getLogger('Spectare')
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='spectare.log', level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='spectare.log', level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 # Function Definitions
@@ -174,3 +174,33 @@ def get_model_info(model) -> dict:
         "num_layers": len(hidden_sizes) + 1,
         "num_nodes": [input_size] + hidden_sizes,
     }
+
+
+def get_model_params(model, param_type: str = "all") -> dict:
+    """
+    Returns the weights or biases of the given model.
+    """
+    # Check if the parameter type is valid
+    assert param_type in ["weight", "bias", "all"], f"Invalid parameter type: {param_type}"
+
+    # Extract the parameters
+    model_params = model.state_dict()
+    
+    # Return the requested parameters
+    params = {}
+    if param_type != "all":
+        for name in model_params:
+            if param_type in name:
+                params[name] = model_params[name]
+            else:
+                continue
+
+    return params
+
+
+def draw_model_with_biases(model, filename: str = "Network Graph.png", colorblind: bool = False) -> None:
+    """
+    Draws a directed graph of a network
+    with the given parameters and export
+    the resulting graph to an image file.
+    """

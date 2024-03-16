@@ -17,7 +17,7 @@ setup(
     version=__version__,
     author="Jordan Welsman",
     author_email="jordan.welsman@outlook.com",
-    description="A PyTorch visualisation and interpretability framework.",
+    description="A neural network visualisation and interpretability framework.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/JordanWelsman/spectare",

@@ -235,15 +235,21 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
     logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
-def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 50, colorblind: bool = False) -> None:
+def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 50, colorblind: bool = False, draw_labels: bool = True) -> None:
     """
-    Draws a directed graph of a network
-    with the given parameters and export
+    Draws a directed graph of a model
+    with the given parameters and exports
     the resulting graph to an image file.
 
     Args:
         num_layers (int): The number of layers in the network.
         num_nodes (list[int]): The number of nodes in each layer.
+        model: The PyTorch model to extract information from.
+        filename (str): The name of the image file to save the graph to.
+        node_base_size (int): The base size of the nodes.
+        node_size_scaling_factor (int): The scaling factor for the node size.
+        colorblind (bool): Whether to use colorblind-friendly colors.
+        draw_labels (bool): Whether to draw node labels.
 
     Returns:
         None
@@ -319,7 +325,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
         node_color = float_to_red_green_color(flattened_nodes[node]) if not colorblind else float_to_red_blue_color(flattened_nodes[node])
         draw_networkx_nodes(g, pos, nodelist=[node], node_size=node_size, node_color=node_color)
         logger.info(f"Drawing node: {node} ({node_color})")
-    draw_networkx_labels(g, pos, font_size=8, font_color="black" if not colorblind else "white")
+    draw_networkx_labels(g, pos, font_size=8, font_color="black" if not colorblind else "white") if draw_labels else None
     for edge in g.edges():
         edge_color = float_to_red_green_color(flattened_edges[edge]) if not colorblind else float_to_red_blue_color(flattened_edges[edge])
         draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color)

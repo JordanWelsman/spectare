@@ -235,7 +235,7 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
     logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
-def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 50, colorblind: bool = False, draw_labels: bool = True) -> None:
+def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 50, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True) -> None:
     """
     Draws a directed graph of a model
     with the given parameters and exports
@@ -250,6 +250,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
         node_size_scaling_factor (int): The scaling factor for the node size.
         colorblind (bool): Whether to use colorblind-friendly colors.
         draw_labels (bool): Whether to draw node labels.
+        draw_legend (bool): Whether to draw a color legend.
 
     Returns:
         None
@@ -331,17 +332,20 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
         draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color)
         logger.info(f"Drawing edge: {edge} ({edge_color})")
 
-    # Create a custom colormap
-    if colorblind:
-        cmap = LinearSegmentedColormap.from_list("red_blue", ["#ff0000", "#0000ff"])
-    else:
-        cmap = LinearSegmentedColormap.from_list("red_green", ["#ff0000", "#00ff00"])
-    norm = plt.Normalize(vmin=-1, vmax=1)
-    sm = ScalarMappable(cmap=cmap, norm=norm)
-    sm.set_array([])
+        
+    # Draw legend if requested
+    if draw_legend:
+        # Create a custom colormap
+        if colorblind:
+            cmap = LinearSegmentedColormap.from_list("red_blue", ["#ff0000", "#0000ff"])
+        else:
+            cmap = LinearSegmentedColormap.from_list("red_green", ["#ff0000", "#00ff00"])
+        norm = plt.Normalize(vmin=-1, vmax=1)
+        sm = ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
 
-    # Add a colorbar
-    plt.colorbar(sm, ax=ax, label="Parameter Value")
+        # Add a colorbar
+        plt.colorbar(sm, ax=ax, label="Parameter Value")
 
     # Set the axis and layout
     axis("off")

@@ -11,7 +11,10 @@ from random import uniform
 from time import time
 t1 = time()
 from typing import Dict, Tuple
-from matplotlib.pyplot import axis, tight_layout, savefig
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import axis, cm, colorbar, figure, Normalize, tight_layout, savefig
 from networkx import DiGraph, draw_networkx_edges, draw_networkx_labels
 from networkx import draw_networkx_nodes, spring_layout, kamada_kawai_layout, random_layout
 import numpy as np
@@ -156,7 +159,6 @@ def calculate_node_size(max_num_nodes, base_node_size: int = 2000, scale_factor:
     print(f"Base Node Size: {base_node_size}")
     print(f"Scale Factor: {scale_factor}")
     return base_node_size
-
 
 
 def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "Network Graph.png", colorblind: bool = False) -> None:
@@ -305,6 +307,9 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     # Calculate node size
     node_size = calculate_node_size(max_nodes, node_base_size, node_size_scaling_factor)
 
+    # Create new figure and axes
+    fig, ax = plt.subplots()
+
     # Draw the graph
     for node in g.nodes():
         node_color = float_to_red_green_color(flattened_nodes[node]) if not colorblind else float_to_red_blue_color(flattened_nodes[node])
@@ -315,6 +320,15 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
         edge_color = float_to_red_green_color(flattened_edges[edge]) if not colorblind else float_to_red_blue_color(flattened_edges[edge])
         draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color)
         logger.info(f"Drawing edge: {edge} ({edge_color})")
+
+    # Create a colormap
+    cmap = plt.cm.coolwarm if not colorblind else plt.cm.bwr
+    norm = plt.Normalize(vmin=-1, vmax=1)
+    sm = ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+
+    # Add a colorbar
+    plt.colorbar(sm, ax=ax, label="Parameter Value")
 
     # Set the axis and layout
     axis("off")

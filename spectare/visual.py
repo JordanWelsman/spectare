@@ -267,6 +267,10 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     # Calculate maximum nodes
     max_nodes = max(num_nodes)  # Maximum number of nodes in a single layer
 
+    # Keep track of min and max param values
+    min_param: float = 0.0
+    max_param: float = 0.0
+
     # Create node names and organize them into layers
     node_layers: list[Dict] = []
     for layer_index in range(len(num_nodes)):
@@ -321,8 +325,11 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
         draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color)
         logger.info(f"Drawing edge: {edge} ({edge_color})")
 
-    # Create a colormap
-    cmap = plt.cm.coolwarm if not colorblind else plt.cm.bwr
+    # Create a custom colormap
+    if colorblind:
+        cmap = LinearSegmentedColormap.from_list("red_blue", ["#ff0000", "#0000ff"])
+    else:
+        cmap = LinearSegmentedColormap.from_list("red_green", ["#ff0000", "#00ff00"])
     norm = plt.Normalize(vmin=-1, vmax=1)
     sm = ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
@@ -333,6 +340,9 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     # Set the axis and layout
     axis("off")
     tight_layout()
+
+    # Add edge padding
+    plt.margins(0.1)
 
     # Save the graph to an image file
     savefig(filename, dpi=300)

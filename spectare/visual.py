@@ -226,6 +226,32 @@ def calculate_node_size(max_num_nodes, base_node_size: int, scale_factor: int) -
     return base_node_size
 
 
+def update_param_bound(current_param: float, new_param: float, direction: str) -> float:
+    """
+    Compares a parameter value with the current min
+    or max and returns the updated parameter value.
+
+    Args:
+        current_param (float): The current min or max parameter value.
+        new_param (float): The new parameter value.
+        direction (str): The direction of comparison (min or max).
+
+    Returns:
+        float: The updated min or max parameter value.
+
+    Example:
+        ```python
+        max_param = update_param_bound(0.0, 0.5, "max")
+        ```
+    """
+    if direction == "min":
+        return min(current_param, new_param)
+    elif direction == "max":
+        return max(current_param, new_param)
+    else:
+        raise ValueError(f"Invalid direction: {direction}. Use 'min' or 'max'.")
+
+
 def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "Network Graph.png", colorblind: bool = False) -> None:
     """
     Draws a directed graph of a network
@@ -350,9 +376,9 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     # Calculate maximum nodes
     max_nodes = max(num_nodes)  # Maximum number of nodes in a single layer
 
-    # Keep track of min and max param values
-    min_param: float = -1.0
-    max_param: float = 1.0
+    # Initialize min and max param values
+    min_param = float('inf')
+    max_param = float('-inf')
 
     # Create node names and organize them into layers
     node_layers: list[Dict] = []
@@ -370,7 +396,11 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
             if layer_index == 0: # if input layer
                 nodes[node_name] = 0.0
             else:
-                nodes[node_name] = list(model_biases.values())[layer_index-1][neuron_index-1].item()
+                param_value = list(model_biases.values())[layer_index-1][neuron_index-1].item()
+                nodes[node_name] = param_value
+                # Update min and max param values
+                min_param = update_param_bound(min_param, param_value, "min")
+                max_param = update_param_bound(max_param, param_value, "max")
         node_layers.append(nodes)
         logger.info(f"Adding layer {layer_index}: {nodes}")
     # print(f"Node layers:\n {node_layers}")
@@ -382,7 +412,11 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
         for end_node, weights_by_end_node in zip(node_layers[layer_index], weights_by_layer):
             for start_node, start_node_weight in zip(node_layers[layer_index-1], weights_by_end_node):
                 g.add_edge(start_node, end_node)
-                connections[(start_node, end_node)] = start_node_weight.item()
+                param_value = start_node_weight.item()
+                # Update min and max param values
+                min_param = update_param_bound(min_param, param_value, "min")
+                max_param = update_param_bound(max_param, param_value, "max")
+                connections[(start_node, end_node)] = param_value
                 logger.info(f"Adding layer {layer_index-1}-{layer_index} edge: {start_node} -> {end_node} ({start_node_weight})")
         edge_layers.append(connections)
     # print(f"Edge layers:\n {edge_layers}")

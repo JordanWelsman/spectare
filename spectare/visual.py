@@ -216,16 +216,12 @@ def calculate_node_size(max_num_nodes, base_node_size: int, scale_factor: int) -
         node_size = calculate_node_size(2000, 0.5, 5)
         ```
     """
-    print(f"Max Number of Nodes:  {max_num_nodes}")
-    print(f"Base Node Size:       {base_node_size}")
-    print(f"Scale Factor:         {scale_factor}")
     if max_num_nodes > 6:
         if max_num_nodes >= 10:
             logger.warning("Maximum number of nodes >= 10. Nodes may appear too small.")
         if max_num_nodes >= 18:
             logger.warning("Visualising networks with more than 18 nodes may be difficult.")
         node_size = base_node_size - scale_factor * log(max_num_nodes)
-        print(f"Node Size:            {node_size}")
         return node_size
     return base_node_size
 

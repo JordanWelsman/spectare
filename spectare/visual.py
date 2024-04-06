@@ -150,8 +150,8 @@ def calculate_color_with_twoslope(value: float, norm: Normalize, colorblind: boo
         str: The calculated color.
     """
     # Handle input neurons
-    if value == 0.0:
-        return "#666666" if colorblind else "#AAAAAA"
+    # if value == 0.0:
+    #     return "#DDDDDD" if colorblind else "#AAAAAA"
     
     # Extract minimum and maximum values from bounds
     min_val, max_val = bounds[0], bounds[-1]
@@ -404,28 +404,32 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
                 norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
                 node_color = calculate_color_with_twoslope(flattened_nodes[node], norm, colorblind, white_neutral)
             else:
+                norm = Normalize(vmin=min_param, vmax=max_param)
                 node_color = float_to_red_blue_color(flattened_nodes[node])
         else:
             if white_neutral:
                 norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
                 node_color = calculate_color_with_twoslope(flattened_nodes[node], norm, colorblind, white_neutral)
             else:
+                norm = Normalize(vmin=min_param, vmax=max_param)
                 node_color = float_to_red_green_color(flattened_nodes[node])
         draw_networkx_nodes(g, pos, nodelist=[node], node_size=node_size, node_color=node_color)
         logger.info(f"Drawing node: {node} ({node_color})")
-    draw_networkx_labels(g, pos, font_size=8, font_color="black" if not colorblind else "white") if draw_labels else None
+    draw_networkx_labels(g, pos, font_size=8, font_color="black") if draw_labels else None
     for edge in g.edges():
         if colorblind:
             if white_neutral:
                 norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
                 edge_color = calculate_color_with_twoslope(flattened_edges[edge], norm, colorblind, white_neutral)
             else:
+                norm = Normalize(vmin=min_param, vmax=max_param)
                 edge_color = float_to_red_blue_color(flattened_edges[edge])
         else:
             if white_neutral:
                 norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
                 edge_color = calculate_color_with_twoslope(flattened_edges[edge], norm, colorblind, white_neutral)
             else:
+                norm = Normalize(vmin=min_param, vmax=max_param)
                 edge_color = float_to_red_green_color(flattened_edges[edge]) if not colorblind else float_to_red_blue_color(flattened_edges[edge])
         draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color)
         logger.info(f"Drawing edge: {edge} ({edge_color})")

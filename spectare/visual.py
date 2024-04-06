@@ -346,8 +346,8 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     max_nodes = max(num_nodes)  # Maximum number of nodes in a single layer
 
     # Keep track of min and max param values
-    min_param: float = 0.0
-    max_param: float = 0.0
+    min_param: float = -1.0
+    max_param: float = 1.0
 
     # Create node names and organize them into layers
     node_layers: list[Dict] = []
@@ -397,36 +397,40 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     # Get colormap
     cmap = get_cmap(colorblind=colorblind, white_neutral=white_neutral)
 
-    # Draw the graph
+    # Draw graph nodes
     for node in g.nodes():
         if colorblind:
             if white_neutral:
-                norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+                norm = TwoSlopeNorm(vmin=min_param, vcenter=0, vmax=max_param)
                 node_color = calculate_color_with_twoslope(flattened_nodes[node], norm, colorblind, white_neutral)
             else:
                 norm = Normalize(vmin=min_param, vmax=max_param)
                 node_color = float_to_red_blue_color(flattened_nodes[node])
         else:
             if white_neutral:
-                norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+                norm = TwoSlopeNorm(vmin=min_param, vcenter=0, vmax=max_param)
                 node_color = calculate_color_with_twoslope(flattened_nodes[node], norm, colorblind, white_neutral)
             else:
                 norm = Normalize(vmin=min_param, vmax=max_param)
                 node_color = float_to_red_green_color(flattened_nodes[node])
         draw_networkx_nodes(g, pos, nodelist=[node], node_size=node_size, node_color=node_color)
         logger.info(f"Drawing node: {node} ({node_color})")
+    
+    # Draw node labels
     draw_networkx_labels(g, pos, font_size=8, font_color="black") if draw_labels else None
+
+    # Draw graph edges
     for edge in g.edges():
         if colorblind:
             if white_neutral:
-                norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+                norm = TwoSlopeNorm(vmin=min_param, vcenter=0, vmax=max_param)
                 edge_color = calculate_color_with_twoslope(flattened_edges[edge], norm, colorblind, white_neutral)
             else:
                 norm = Normalize(vmin=min_param, vmax=max_param)
                 edge_color = float_to_red_blue_color(flattened_edges[edge])
         else:
             if white_neutral:
-                norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+                norm = TwoSlopeNorm(vmin=min_param, vcenter=0, vmax=max_param)
                 edge_color = calculate_color_with_twoslope(flattened_edges[edge], norm, colorblind, white_neutral)
             else:
                 norm = Normalize(vmin=min_param, vmax=max_param)

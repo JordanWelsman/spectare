@@ -12,7 +12,7 @@ from time import time
 t1 = time()
 from typing import Dict, Tuple
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap, to_hex, TwoSlopeNorm
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import axis, cm, colorbar, figure, Normalize, tight_layout, savefig
 from networkx import DiGraph, draw_networkx_edges, draw_networkx_labels
@@ -136,6 +136,66 @@ def float_to_red_blue_color(value):
     return "#{:02x}{:02x}{:02x}".format(r, 0, b)
 
 
+def calculate_color_with_twoslope(value: float, norm: Normalize, colorblind: bool, white_neutral: bool, bounds: tuple = (-1, 1)) -> str:
+    """
+    Calculates a color based on the given
+    value in a two-slope colormap.
+
+    Args:
+        value (float): The value to calculate the color for.
+        norm (Normalize): The normalization object to use.
+        bounds (tuple): The bounds of the colormap.
+
+    Returns:
+        str: The calculated color.
+    """
+    # Handle input neurons
+    if value == 0.0:
+        return "#666666" if colorblind else "#AAAAAA"
+    
+    # Extract minimum and maximum values from bounds
+    min_val, max_val = bounds[0], bounds[-1]
+
+    # Create two-slope colormap and scalar mappable object
+    norm = TwoSlopeNorm(vmin=min_val, vcenter=0, vmax=max_val)
+    sm = ScalarMappable(cmap=get_cmap(colorblind, white_neutral), norm=norm)
+
+    # Convert value to color
+    rgba = sm.to_rgba(value)
+
+    return to_hex(rgba)
+
+
+def get_cmap(colorblind: bool, white_neutral: bool) -> LinearSegmentedColormap:
+    """
+    Returns a colormap based on the given
+    colorblind and white neutral flags.
+
+    Args:
+        colorblind (bool): Whether to use colorblind-friendly colors.
+        white_neutral (bool): Whether to use a one-slope or two-slope colormap.
+
+    Returns:
+        LinearSegmentedColormap: The generated colormap.
+
+    Example:
+        ```python
+        cmap = get_cmap(colorblind=True, white_neutral=False)
+        ```
+    """
+    if colorblind:
+        if white_neutral:
+            cmap = LinearSegmentedColormap.from_list("red_white_blue", ["#ff0000", "#dddddd", "#0000ff"])
+        else:
+            cmap = LinearSegmentedColormap.from_list("red_blue", ["#ff0000", "#0000ff"])
+    else:
+        if white_neutral:
+            cmap = LinearSegmentedColormap.from_list("red_white_green", ["#ff0000", "#dddddd", "#00ff00"])
+        else:
+            cmap = LinearSegmentedColormap.from_list("red_green", ["#ff0000", "#00ff00"])
+    return cmap
+
+
 def calculate_node_size(max_num_nodes, base_node_size: int = 2000, scale_factor: int = 50) -> int:
     """
     Calculates the size of the nodes based on the
@@ -235,7 +295,7 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
     logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
-def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 50, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True) -> None:
+def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 50, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True, white_neutral: bool = True) -> None:
     """
     Draws a directed graph of a model
     with the given parameters and exports
@@ -251,13 +311,24 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
         colorblind (bool): Whether to use colorblind-friendly colors.
         draw_labels (bool): Whether to draw node labels.
         draw_legend (bool): Whether to draw a color legend.
+        white_neutral (bool): Whether to use a one-slope or two-slope colormap.
 
     Returns:
         None
 
     Example:
-        ```python3
-        draw_network(4, [3, 4, 5, 2], model, "Network Graph.png", False)
+        ```python
+        spectare.draw_network(
+            num_layers = 4,
+            num_nodes = [3, 4, 5, 2],
+            model = model,
+            filename = "Network Graph.png",
+            node_base_size = 2000,
+            node_size_Scaling_factor = 50,
+            colorblind = False,
+            draw_labels = True,
+            draw_legend = True,
+            white_neutral = True)
         ```
     """
     # Check if the number of layers and nodes match
@@ -321,26 +392,46 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     # Create new figure and axes
     fig, ax = plt.subplots()
 
+    print(f"Colorblind Mode: {colorblind}, White Neutral: {white_neutral}")
+
+    # Get colormap
+    cmap = get_cmap(colorblind=colorblind, white_neutral=white_neutral)
+
     # Draw the graph
     for node in g.nodes():
-        node_color = float_to_red_green_color(flattened_nodes[node]) if not colorblind else float_to_red_blue_color(flattened_nodes[node])
+        if colorblind:
+            if white_neutral:
+                norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+                node_color = calculate_color_with_twoslope(flattened_nodes[node], norm, colorblind, white_neutral)
+            else:
+                node_color = float_to_red_blue_color(flattened_nodes[node])
+        else:
+            if white_neutral:
+                norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+                node_color = calculate_color_with_twoslope(flattened_nodes[node], norm, colorblind, white_neutral)
+            else:
+                node_color = float_to_red_green_color(flattened_nodes[node])
         draw_networkx_nodes(g, pos, nodelist=[node], node_size=node_size, node_color=node_color)
         logger.info(f"Drawing node: {node} ({node_color})")
     draw_networkx_labels(g, pos, font_size=8, font_color="black" if not colorblind else "white") if draw_labels else None
     for edge in g.edges():
-        edge_color = float_to_red_green_color(flattened_edges[edge]) if not colorblind else float_to_red_blue_color(flattened_edges[edge])
+        if colorblind:
+            if white_neutral:
+                norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+                edge_color = calculate_color_with_twoslope(flattened_edges[edge], norm, colorblind, white_neutral)
+            else:
+                edge_color = float_to_red_blue_color(flattened_edges[edge])
+        else:
+            if white_neutral:
+                norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+                edge_color = calculate_color_with_twoslope(flattened_edges[edge], norm, colorblind, white_neutral)
+            else:
+                edge_color = float_to_red_green_color(flattened_edges[edge]) if not colorblind else float_to_red_blue_color(flattened_edges[edge])
         draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color)
         logger.info(f"Drawing edge: {edge} ({edge_color})")
-
         
     # Draw legend if requested
     if draw_legend:
-        # Create a custom colormap
-        if colorblind:
-            cmap = LinearSegmentedColormap.from_list("red_blue", ["#ff0000", "#0000ff"])
-        else:
-            cmap = LinearSegmentedColormap.from_list("red_green", ["#ff0000", "#00ff00"])
-        norm = plt.Normalize(vmin=-1, vmax=1)
         sm = ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])
 

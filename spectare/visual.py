@@ -7,6 +7,7 @@ __all__ = ["calculate_node_size", "draw_network", "draw_random_network", "get_mo
 
 # Module imports
 import logging
+from math import log
 from random import uniform
 from time import time
 t1 = time()
@@ -14,7 +15,7 @@ from typing import Dict, Tuple
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import LinearSegmentedColormap, to_hex, TwoSlopeNorm
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import axis, cm, colorbar, figure, Normalize, tight_layout, savefig
+from matplotlib.pyplot import axis, Normalize, tight_layout, savefig
 from networkx import DiGraph, draw_networkx_edges, draw_networkx_labels
 from networkx import draw_networkx_nodes, spring_layout, kamada_kawai_layout, random_layout
 import numpy as np
@@ -196,7 +197,7 @@ def get_cmap(colorblind: bool, white_neutral: bool) -> LinearSegmentedColormap:
     return cmap
 
 
-def calculate_node_size(max_num_nodes, base_node_size: int = 2000, scale_factor: int = 50) -> int:
+def calculate_node_size(max_num_nodes, base_node_size: int, scale_factor: int) -> int:
     """
     Calculates the size of the nodes based on the
     base node size, scale factor, and maximum number
@@ -215,9 +216,17 @@ def calculate_node_size(max_num_nodes, base_node_size: int = 2000, scale_factor:
         node_size = calculate_node_size(2000, 0.5, 5)
         ```
     """
-    print(f"Max Number of Nodes: {max_num_nodes}")
-    print(f"Base Node Size: {base_node_size}")
-    print(f"Scale Factor: {scale_factor}")
+    print(f"Max Number of Nodes:  {max_num_nodes}")
+    print(f"Base Node Size:       {base_node_size}")
+    print(f"Scale Factor:         {scale_factor}")
+    if max_num_nodes > 6:
+        if max_num_nodes >= 10:
+            logger.warning("Maximum number of nodes >= 10. Nodes may appear too small.")
+        if max_num_nodes >= 18:
+            logger.warning("Visualising networks with more than 18 nodes may be difficult.")
+        node_size = base_node_size - scale_factor * log(max_num_nodes)
+        print(f"Node Size:            {node_size}")
+        return node_size
     return base_node_size
 
 
@@ -295,7 +304,7 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
     logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
-def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 50, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True, white_neutral: bool = True) -> None:
+def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 640, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True, white_neutral: bool = True) -> None:
     """
     Draws a directed graph of a model
     with the given parameters and exports
@@ -340,7 +349,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
 
     # Create a directed graph
     g = DiGraph()
-    pos = random_layout(g)
+    pos = spring_layout(g)
 
     # Calculate maximum nodes
     max_nodes = max(num_nodes)  # Maximum number of nodes in a single layer
@@ -435,7 +444,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
             else:
                 norm = Normalize(vmin=min_param, vmax=max_param)
                 edge_color = float_to_red_green_color(flattened_edges[edge]) if not colorblind else float_to_red_blue_color(flattened_edges[edge])
-        draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color)
+        draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color, arrows=False)
         logger.info(f"Drawing edge: {edge} ({edge_color})")
         
     # Draw legend if requested

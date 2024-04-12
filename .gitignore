@@ -6,3 +6,4 @@ build
 dist
 spectare.egg-info
 test.py
+test_tf.py

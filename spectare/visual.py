@@ -435,7 +435,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
                 max_param = update_param_bound(max_param, param_value, "max")
         node_layers.append(nodes)
         logger.info(f"Adding layer {layer_index}: {nodes}")
-    print(f"Node layers:\n {node_layers}")
+    # print(f"Node layers:\n {node_layers}")
 
     # Create edges between nodes
     edge_layers: list[Dict] = []
@@ -451,7 +451,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
                 connections[(start_node, end_node)] = param_value
                 logger.info(f"Adding layer {layer_index-1}-{layer_index} edge: {start_node} -> {end_node} ({start_node_weight})")
         edge_layers.append(connections)
-    print(f"Edge layers:\n {edge_layers}")
+    # print(f"Edge layers:\n {edge_layers}")
         
     # Collapse node and edge dictionaries into single dictionaries
     flattened_nodes = {node: bias for layer in node_layers for node, bias in layer.items()}
@@ -571,7 +571,6 @@ def draw_tf_network(num_layers: int, num_nodes: list[int], model, filename: str 
     # Get model weights and biases
     model_weights = get_tf_model_params(model, "weight")
     model_biases = get_tf_model_params(model, "bias")
-    print(f"MODEL BIASES: {model_biases}")
 
     # Create a directed grapg
     g = DiGraph()
@@ -584,7 +583,7 @@ def draw_tf_network(num_layers: int, num_nodes: list[int], model, filename: str 
     min_param = float('inf')
     max_param = float('-inf')
 
-    print(f"Drawing a TensorFlow graph with a {type(model)} model.")
+    logger.info(f"Drawing a TensorFlow graph with a {type(model)} model.")
 
     # Create node names and organize them into layers
     node_layers: list[Dict] = []
@@ -609,7 +608,7 @@ def draw_tf_network(num_layers: int, num_nodes: list[int], model, filename: str 
                 max_param = update_param_bound(max_param, param_value, "max")
         node_layers.append(nodes)
         logger.info(f"Adding layer {layer_index}: {nodes}")
-    print(f"Node layers:\n {node_layers}")
+    # print(f"Node layers:\n {node_layers}")
 
     # Transpose the weights to match the node layers
     model_weights = {k: v.T for k, v in model_weights.items()}
@@ -628,7 +627,7 @@ def draw_tf_network(num_layers: int, num_nodes: list[int], model, filename: str 
                 connections[(start_node, end_node)] = param_value
                 logger.info(f"Adding layer {layer_index-1}-{layer_index} edge: {start_node} -> {end_node} ({start_node_weight})")
         edge_layers.append(connections)
-    print(f"Edge layers:\n {edge_layers}")
+    # print(f"Edge layers:\n {edge_layers}")
 
     # Collapse node and edge dictionaries into single dictionaries
     flattened_nodes = {node: bias for layer in node_layers for node, bias in layer.items()}

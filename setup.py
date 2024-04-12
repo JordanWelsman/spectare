@@ -43,6 +43,8 @@ setup(
         },
     python_requires='>=3.10',
     install_requires=[
-        "networkx>=3.2.1"
+        "matplotlib>=3.8.4",
+        "networkx>=3.2.1",
+        "numpy>=1.26.4"
     ]
 )

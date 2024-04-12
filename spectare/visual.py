@@ -1,9 +1,11 @@
 """
+# spectare.visual
+
 Contains all functions related to visualizing neural networks.
 """
 
 # External Visibility
-__all__ = ["calculate_node_size", "detect_framework", "draw_network", "draw_tf_network", "draw_random_network", "get_model_info", "get_tf_model_info", "get_model_params", "get_tf_model_params"]
+__all__ = ["calculate_node_size", "detect_framework", "detect_module_root", "draw_network", "draw_tf_network", "draw_random_network", "get_model_info", "get_tf_model_info", "get_model_params", "get_tf_model_params"]
 
 # Module imports
 import logging
@@ -59,6 +61,24 @@ def detect_framework() -> str:
         return "tf"
     else:
         return "none"
+
+
+def detect_module_root(object: object) -> str:
+    """
+    Detects the root module of a function or class.
+    
+    Args:
+        object: The object to detect the module root of.
+
+    Returns:
+        str: The root module of the object.
+
+    Example:
+        ```python
+        module_root = detect_module_root(object)
+        ```
+    """
+    return object.__module__.split(".")[0]
 
 
 def calculate_color(parameter: float = 0.0, bounds: tuple = (-1, 1)) -> str:

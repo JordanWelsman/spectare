@@ -5,7 +5,7 @@ Contains all functions related to visualizing neural networks.
 """
 
 # External Visibility
-__all__ = ["calculate_node_size", "detect_framework", "detect_module_root", "draw_network", "draw_tf_network", "draw_random_network", "get_model_info", "get_tf_model_info", "get_model_params", "get_tf_model_params"]
+__all__ = ["calculate_node_size", "detect_framework", "detect_module_root", "draw_network", "draw_torch_network", "draw_keras_network", "draw_random_network", "get_torch_model_info", "get_keras_model_info", "get_torch_model_params", "get_keras_model_params"]
 
 # Module imports
 import logging
@@ -13,15 +13,15 @@ from math import log
 from random import uniform
 from time import time
 t1 = time()
-from typing import Dict, Tuple
-import tensorflow as tf
+from typing import Dict, Tuple, Union
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import LinearSegmentedColormap, to_hex, TwoSlopeNorm
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import axis, Normalize, tight_layout, savefig
 from networkx import DiGraph, draw_networkx_edges, draw_networkx_labels
-from networkx import draw_networkx_nodes, spring_layout, kamada_kawai_layout, random_layout
+from networkx import draw_networkx_nodes, spring_layout
 import numpy as np
+from os.path import isfile
 t2 = time()
 # print(f"Module Import Time: {(t2 - t1):.4f}s")
 
@@ -38,6 +38,8 @@ def detect_framework() -> str:
     """
     torch_installed = tf_installed = False
 
+    t1 = time()
+
     # Detect PyTorch
     try:
         import torch
@@ -52,14 +54,21 @@ def detect_framework() -> str:
     except ImportError:
         pass
 
+    t2 = time()
+    t = t2 - t1
+
     # Return the detected framework
     if torch_installed and tf_installed:
+        logger.warning(f"Both PyTorch and TensorFlow were detected in {t:.1f}s. Spectare will propably default to PyTorch.")
         return "both"
     elif torch_installed:
+        logger.info(f"PyTorch was detected in {t:.1f}s.")
         return "torch"
     elif tf_installed:
-        return "tf"
+        logger.info(f"Keras/TensorFlow was detected in {t:.1f}s.")
+        return "keras"
     else:
+        logger.error("No deep learning framework has been detected.")
         return "none"
 
 
@@ -378,9 +387,97 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
     logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
-def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 640, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True, white_neutral: bool = True) -> None:
+def draw_network(
+    from_model: Union["torch.nn.Sequential", "tf.keras.Sequential"] = None,
+    from_file: str = None,
+    filename: str = "Network Graph.png",
+    node_base_size: int = 2000,
+    node_size_scaling_factor: int = 640,
+    colorblind: bool = False,
+    draw_labels: bool = True,
+    draw_legend: bool = True,
+    white_neutral: bool = True) -> None:
     """
-    Draws a directed graph of a model
+    Detects the deep learning framework in use from the given model
+    and draws a directed graph of the network with the given parameters.
+
+    Args:
+        model: The PyTorch or TensorFlow model to extract information from.
+        filename (str): The name of the image file to save the graph to.
+        node_base_size (int): The base size of the nodes.
+        node_size_scaling_factor (int): The scaling factor for the node size.
+        colorblind (bool): Whether to use colorblind-friendly colors.
+        draw_labels (bool): Whether to draw node labels.
+        draw_legend (bool): Whether to draw a color legend.
+        white_neutral (bool): Whether to use a one-slope or two-slope colormap.
+
+    Returns:
+        None
+
+    Example:
+        ```python
+        draw_network(
+            model=model,
+            filename="Network Graph.png",
+            node_base_size=2000,
+            node_size_scaling_factor=640,
+            colorblind=True,
+            draw_labels=False,
+            draw_legend=True,
+            white_neutral=True)
+        ```
+    """
+
+    # Load model from file if filepath is provided
+    if from_file is not None:
+        model = get_model_from_file(from_file)
+    else:
+        model = from_model
+
+    # Detect the deep learning framework in use
+    library_framework = detect_framework()
+    model_framework = detect_module_root(model)
+
+    print(f"Library Framework: {library_framework}, Model Framework: {model_framework}")
+
+    # Check if the model is a PyTorch or TensorFlow model
+    if model_framework == "torch":
+        num_layers = get_torch_model_info(model)["num_layers"]
+        num_nodes = get_torch_model_info(model)["num_nodes"]
+        draw_torch_network(
+            num_layers=num_layers,
+            num_nodes=num_nodes,
+            model=model,
+            filename=filename,
+            node_base_size=node_base_size,
+            node_size_scaling_factor=node_size_scaling_factor,
+            colorblind=colorblind,
+            draw_labels=draw_labels,
+            draw_legend=draw_legend,
+            white_neutral=white_neutral
+        )
+    elif model_framework == "keras":
+        num_layers = get_keras_model_info(model)["num_layers"]
+        num_nodes = get_keras_model_info(model)["num_nodes"]
+        draw_keras_network(
+            num_layers=num_layers,
+            num_nodes=num_nodes,
+            model=model,
+            filename=filename,
+            node_base_size=node_base_size,
+            node_size_scaling_factor=node_size_scaling_factor,
+            colorblind=colorblind,
+            draw_labels=draw_labels,
+            draw_legend=draw_legend,
+            white_neutral=white_neutral
+        )
+    else:
+        logger.error("Invalid model framework. Use PyTorch or TensorFlow/Keras.")
+
+
+def draw_torch_network(num_layers: int, num_nodes: list[int], model, filename: str, node_base_size: int = 2000, node_size_scaling_factor: int = 640, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True, white_neutral: bool = True) -> None:
+    """
+    Draws a directed graph of a PyTorch model
     with the given parameters and exports
     the resulting graph to an image file.
 
@@ -401,7 +498,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
 
     Example:
         ```python
-        spectare.draw_network(
+        spectare.draw_torch_network(
             num_layers = 4,
             num_nodes = [3, 4, 5, 2],
             model = model,
@@ -418,8 +515,8 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     assert len(num_nodes) == num_layers, f"Number of layers do not match: {num_layers} and {len(num_nodes)}."
 
     # Get model weights and biases
-    model_weights = get_model_params(model, "weight")
-    model_biases = get_model_params(model, "bias")
+    model_weights = get_torch_model_params(model, "weight")
+    model_biases = get_torch_model_params(model, "bias")
 
     # Create a directed graph
     g = DiGraph()
@@ -549,7 +646,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
-def draw_tf_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 640, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True, white_neutral: bool = True) -> None:
+def draw_keras_network(num_layers: int, num_nodes: list[int], model, filename: str, node_base_size: int = 2000, node_size_scaling_factor: int = 640, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True, white_neutral: bool = True) -> None:
     """
     Draws a directed graph of a TensorFlow
     model with the given parameters and exports
@@ -589,8 +686,8 @@ def draw_tf_network(num_layers: int, num_nodes: list[int], model, filename: str 
     assert len(num_nodes) == num_layers, f"Number of layers do not match: {num_layers} and {len(num_nodes)}."
 
     # Get model weights and biases
-    model_weights = get_tf_model_params(model, "weight")
-    model_biases = get_tf_model_params(model, "bias")
+    model_weights = get_keras_model_params(model, "weight")
+    model_biases = get_keras_model_params(model, "bias")
 
     # Create a directed grapg
     g = DiGraph()
@@ -725,7 +822,44 @@ def draw_tf_network(num_layers: int, num_nodes: list[int], model, filename: str 
     logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
-def get_model_info(model) -> dict:
+def get_model_from_file(file_path: str) -> Union["torch.nn.Sequential", "tf.keras.Sequential"]:
+    """
+    Loads a PyTorch or TensorFlow model from a file.
+
+    Args:
+        file_path (str): The path to the file to load the model from.
+
+    Returns:
+        Union["torch.nn.Sequential", "tf.keras.Sequential"]: The loaded model.
+
+    Example:
+        ```python
+        model = get_model_from_file("model.pth")
+        ```
+    """
+    # Check if the file exists
+    assert isfile(file_path), f"File not found: {file_path}"
+
+    # Try to load the model from the file
+    if file_path.endswith(".pth"):
+        try:
+            import torch
+            model = torch.load(file_path)
+            return model
+        except Exception as e:
+            raise ValueError(f"Failed to load PyTorch model: {e}")
+    elif file_path.endswith(".keras") or file_path.endswith(".h5"):
+        try:
+            import tensorflow as tf
+            model = tf.keras.models.load_model(file_path)
+            return model
+        except Exception as e:
+            raise ValueError(f"Failed to load TensorFlow model: {e}")
+    else:
+        raise ValueError(f"Invalid file format: {file_path}")
+
+
+def get_torch_model_info(model) -> dict:
     """
     Extracts information about a PyTorch
     model's architecture and parameters.
@@ -753,7 +887,7 @@ def get_model_info(model) -> dict:
     }
 
 
-def get_tf_model_info(model) -> dict:
+def get_keras_model_info(model) -> dict:
     """
     Extracts information about a TensorFlow
     model's architecture and parameters.
@@ -772,6 +906,10 @@ def get_tf_model_info(model) -> dict:
     # Get Hidden Layer Neuron Counts
     hidden_sizes = []
     for layer in model.layers:
+        try:
+            import tensorflow as tf
+        except ImportError:
+            raise ImportError("TensorFlow is not installed. Please install TensorFlow to use this function.")
         if isinstance(layer, tf.keras.layers.Dense):
             hidden_sizes.append(layer.units)
 
@@ -782,7 +920,7 @@ def get_tf_model_info(model) -> dict:
     }
 
 
-def get_model_params(model, param_type: str = "all") -> dict:
+def get_torch_model_params(model, param_type: str = "all") -> dict:
     """
     Returns the weights or biases of the given model.
     """
@@ -807,7 +945,7 @@ def get_model_params(model, param_type: str = "all") -> dict:
     return params
 
 
-def get_tf_model_params(model, param_type: str = "all") -> dict:
+def get_keras_model_params(model, param_type: str = "all") -> dict:
     """
     Returns the weights or biases of the given model.
     

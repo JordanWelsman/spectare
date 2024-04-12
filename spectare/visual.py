@@ -3,7 +3,7 @@ Contains all functions related to visualizing neural networks.
 """
 
 # External Visibility
-__all__ = ["calculate_node_size", "draw_network", "draw_random_network", "get_model_info", "get_model_params"]
+__all__ = ["calculate_node_size", "detect_framework", "draw_network", "draw_tf_network", "draw_random_network", "get_model_info", "get_tf_model_info", "get_model_params", "get_tf_model_params"]
 
 # Module imports
 import logging
@@ -12,6 +12,7 @@ from random import uniform
 from time import time
 t1 = time()
 from typing import Dict, Tuple
+import tensorflow as tf
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import LinearSegmentedColormap, to_hex, TwoSlopeNorm
 import matplotlib.pyplot as plt
@@ -29,6 +30,37 @@ logging.basicConfig(filename='spectare.log', filemode='w', level=logging.INFO, f
 
 
 # Function Definitions
+def detect_framework() -> str:
+    """
+    Detects the installed deep learning framework.
+    """
+    torch_installed = tf_installed = False
+
+    # Detect PyTorch
+    try:
+        import torch
+        torch_installed = True
+    except ImportError:
+        pass
+
+    # Detect TensorFlow
+    try:
+        import tensorflow
+        tf_installed = True
+    except ImportError:
+        pass
+
+    # Return the detected framework
+    if torch_installed and tf_installed:
+        return "both"
+    elif torch_installed:
+        return "torch"
+    elif tf_installed:
+        return "tf"
+    else:
+        return "none"
+
+
 def calculate_color(parameter: float = 0.0, bounds: tuple = (-1, 1)) -> str:
     """
     Generates a hex color code based on the
@@ -403,7 +435,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
                 max_param = update_param_bound(max_param, param_value, "max")
         node_layers.append(nodes)
         logger.info(f"Adding layer {layer_index}: {nodes}")
-    # print(f"Node layers:\n {node_layers}")
+    print(f"Node layers:\n {node_layers}")
 
     # Create edges between nodes
     edge_layers: list[Dict] = []
@@ -419,7 +451,7 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
                 connections[(start_node, end_node)] = param_value
                 logger.info(f"Adding layer {layer_index-1}-{layer_index} edge: {start_node} -> {end_node} ({start_node_weight})")
         edge_layers.append(connections)
-    # print(f"Edge layers:\n {edge_layers}")
+    print(f"Edge layers:\n {edge_layers}")
         
     # Collapse node and edge dictionaries into single dictionaries
     flattened_nodes = {node: bias for layer in node_layers for node, bias in layer.items()}
@@ -497,10 +529,187 @@ def draw_network(num_layers: int, num_nodes: list[int], model, filename: str = "
     logger.info(f"Neural Network Graph saved to '{filename}'.")
 
 
+def draw_tf_network(num_layers: int, num_nodes: list[int], model, filename: str = "Network Graph.png", node_base_size: int = 2000, node_size_scaling_factor: int = 640, colorblind: bool = False, draw_labels: bool = True, draw_legend: bool = True, white_neutral: bool = True) -> None:
+    """
+    Draws a directed graph of a TensorFlow
+    model with the given parameters and exports
+    the resulting graph to an image file.
+
+    Args:
+        `num_layers` (int): The number of layers in the network.
+        `num_nodes` (list[int]): The number of nodes in each layer.
+        `model`: The TensorFlow model to extract information from.
+        `filename` (str): The name of the image file to save the graph to.
+        `node_base_size` (int): The base size of the nodes.
+        `node_size_scaling_factor` (int): The scaling factor for the node size.
+        `colorblind` (bool): Whether to use colorblind-friendly colors.
+        `draw_labels` (bool): Whether to draw node labels.
+        `draw_legend` (bool): Whether to draw a color legend.
+        `white_neutral` (bool): Whether to use a one-slope or two-slope colormap.
+
+    Returns:
+        None
+
+    Example:
+        ```python
+        spectare.draw_tf_network(
+            num_layers = 4,
+            num_nodes = [3, 4, 5, 2],
+            model = model,
+            filename = "Network Graph.png",
+            node_base_size = 2000,
+            node_size_Scaling_factor = 50,
+            colorblind = False,
+            draw_labels = True,
+            draw_legend = True,
+            white_neutral = True)
+        ```
+    """
+    # Check if the number of layers and nodes match
+    assert len(num_nodes) == num_layers, f"Number of layers do not match: {num_layers} and {len(num_nodes)}."
+
+    # Get model weights and biases
+    model_weights = get_tf_model_params(model, "weight")
+    model_biases = get_tf_model_params(model, "bias")
+    print(f"MODEL BIASES: {model_biases}")
+
+    # Create a directed grapg
+    g = DiGraph()
+    pos = spring_layout(g)
+
+    # Calculate maximum nodes
+    max_nodes = max(num_nodes)  # Maximum number of nodes in a single layer
+
+    # Initialize min and max param values
+    min_param = float('inf')
+    max_param = float('-inf')
+
+    print(f"Drawing a TensorFlow graph with a {type(model)} model.")
+
+    # Create node names and organize them into layers
+    node_layers: list[Dict] = []
+    for layer_index in range(len(num_nodes)):
+        nodes: Dict[str, float] = {}
+        for neuron_index in range(num_nodes[layer_index]):
+            if num_nodes[layer_index] == 1:
+                node_name = f"a[{layer_index}]"
+            else:
+                node_name = f"a{neuron_index+1}[{layer_index}]"
+            # Calculate position for node
+            y_pos = -(neuron_index - (num_nodes[layer_index] - 1) / 2.0 + (max_nodes - 1) / 2.0)
+            pos[node_name] = (layer_index, y_pos)
+            # Add node to layer
+            if layer_index == 0:
+                nodes[node_name] = 0.0
+            else:
+                param_value = list(model_biases.values())[layer_index-1][neuron_index].item()
+                nodes[node_name] = param_value
+                # Update min and max param values
+                min_param = update_param_bound(min_param, param_value, "min")
+                max_param = update_param_bound(max_param, param_value, "max")
+        node_layers.append(nodes)
+        logger.info(f"Adding layer {layer_index}: {nodes}")
+    print(f"Node layers:\n {node_layers}")
+
+    # Transpose the weights to match the node layers
+    model_weights = {k: v.T for k, v in model_weights.items()}
+
+    # Create edges between nodes
+    edge_layers: list[Dict] = []
+    for layer_index, weights_by_layer in zip(range(1, len(node_layers)), list(model_weights.values())): # skip the first layer
+        connections: Dict[Tuple, float] = {}
+        for end_node, weights_by_end_node in zip(node_layers[layer_index], weights_by_layer):
+            for start_node, start_node_weight in zip(node_layers[layer_index-1], weights_by_end_node):
+                g.add_edge(start_node, end_node)
+                param_value = start_node_weight.item()
+                # Update min and max param values
+                min_param = update_param_bound(min_param, param_value, "min")
+                max_param = update_param_bound(max_param, param_value, "max")
+                connections[(start_node, end_node)] = param_value
+                logger.info(f"Adding layer {layer_index-1}-{layer_index} edge: {start_node} -> {end_node} ({start_node_weight})")
+        edge_layers.append(connections)
+    print(f"Edge layers:\n {edge_layers}")
+
+    # Collapse node and edge dictionaries into single dictionaries
+    flattened_nodes = {node: bias for layer in node_layers for node, bias in layer.items()}
+    flattened_edges = {edge: weight for layer in edge_layers for edge, weight in layer.items()}
+
+    # Calculate node size
+    node_size = calculate_node_size(max_nodes, node_base_size, node_size_scaling_factor)
+
+    # Create new figure and axes
+    fig, ax = plt.subplots()
+
+    print(f"Colorblind Mode: {colorblind}, White Neutral: {white_neutral}")
+
+    # Get colormap
+    cmap = get_cmap(colorblind=colorblind, white_neutral=white_neutral)
+
+    # Draw graph nodes
+    for node in g.nodes():
+        if colorblind:
+            if white_neutral:
+                norm = TwoSlopeNorm(vmin=min_param, vcenter=0, vmax=max_param)
+                node_color = calculate_color_with_twoslope(flattened_nodes[node], norm, colorblind, white_neutral)
+            else:
+                norm = Normalize(vmin=min_param, vmax=max_param)
+                node_color = float_to_red_blue_color(flattened_nodes[node])
+        else:
+            if white_neutral:
+                norm = TwoSlopeNorm(vmin=min_param, vcenter=0, vmax=max_param)
+                node_color = calculate_color_with_twoslope(flattened_nodes[node], norm, colorblind, white_neutral)
+            else:
+                norm = Normalize(vmin=min_param, vmax=max_param)
+                node_color = float_to_red_green_color(flattened_nodes[node])
+        draw_networkx_nodes(g, pos, nodelist=[node], node_size=node_size, node_color=node_color)
+        logger.info(f"Drawing node: {node} ({node_color})")
+
+    # Draw node labels
+    draw_networkx_labels(g, pos, font_size=8, font_color="black") if draw_labels else None
+
+    # Draw graph edges
+    for edge in g.edges():
+        if colorblind:
+            if white_neutral:
+                norm = TwoSlopeNorm(vmin=min_param, vcenter=0, vmax=max_param)
+                edge_color = calculate_color_with_twoslope(flattened_edges[edge], norm, colorblind, white_neutral)
+            else:
+                norm = Normalize(vmin=min_param, vmax=max_param)
+                edge_color = float_to_red_blue_color(flattened_edges[edge])
+        else:
+            if white_neutral:
+                norm = TwoSlopeNorm(vmin=min_param, vcenter=0, vmax=max_param)
+                edge_color = calculate_color_with_twoslope(flattened_edges[edge], norm, colorblind, white_neutral)
+            else:
+                norm = Normalize(vmin=min_param, vmax=max_param)
+                edge_color = float_to_red_green_color(flattened_edges[edge]) if not colorblind else float_to_red_blue_color(flattened_edges[edge])
+        draw_networkx_edges(g, pos, edgelist=[edge], edge_color=edge_color, arrows=False)
+        logger.info(f"Drawing edge: {edge} ({edge_color})")
+
+    # Draw legend if requested
+    if draw_legend:
+        sm = ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])
+
+        # Add a colorbar
+        plt.colorbar(sm, ax=ax, label="Parameter Value")
+
+    # Set the axis and layout
+    axis("off")
+    tight_layout()
+
+    # Add edge padding
+    plt.margins(0.1)
+
+    # Save the graph to an image file
+    savefig(filename, dpi=300)
+    logger.info(f"Neural Network Graph saved to '{filename}'.")
+
+
 def get_model_info(model) -> dict:
     """
-    Extracts information about the model's
-    architecture and parameters.
+    Extracts information about a PyTorch
+    model's architecture and parameters.
 
     Args:
         model: The PyTorch model to extract information from.
@@ -517,6 +726,35 @@ def get_model_info(model) -> dict:
     for name, param in model.named_parameters():
         if 'weight' in name:
             hidden_sizes.append(param.shape[0])
+
+    # Return Model Information
+    return {
+        "num_layers": len(hidden_sizes) + 1,
+        "num_nodes": [input_size] + hidden_sizes,
+    }
+
+
+def get_tf_model_info(model) -> dict:
+    """
+    Extracts information about a TensorFlow
+    model's architecture and parameters.
+    
+    Args:
+        model: The TensorFlow model to extract information from.
+
+    Returns:
+        tuple: A tuple containing the model's architecture and parameters.
+    """
+    # Get Input & Output Sizes
+    model_weights = model.get_weights()
+    input_size = model_weights[0].shape[0]
+    output_size = model_weights[-1].shape[0]
+
+    # Get Hidden Layer Neuron Counts
+    hidden_sizes = []
+    for layer in model.layers:
+        if isinstance(layer, tf.keras.layers.Dense):
+            hidden_sizes.append(layer.units)
 
     # Return Model Information
     return {
@@ -550,9 +788,35 @@ def get_model_params(model, param_type: str = "all") -> dict:
     return params
 
 
-def draw_model_with_biases(model, filename: str = "Network Graph.png", colorblind: bool = False) -> None:
+def get_tf_model_params(model, param_type: str = "all") -> dict:
     """
-    Draws a directed graph of a network
-    with the given parameters and export
-    the resulting graph to an image file.
+    Returns the weights or biases of the given model.
+    
+    Args:
+        model: The TensorFlow model to extract parameters from.
+        param_type (str): The type of parameter to extract.
+        
+    Returns:
+        dict: The extracted parameters.
     """
+    # Check if the parameter type is valid
+    assert param_type in ["weight", "bias", "all"], f"Invalid parameter type: {param_type}"
+
+    # Extract the parameters
+    model_params = model.get_weights()
+
+    # Return the requested parameters
+    params = {}
+    if param_type != "all":
+        if param_type == "weight":
+            for params_index in range(0, len(model_params), 2):
+                params[f"{params_index}.weight"] = model_params[params_index]
+        elif param_type == "bias":
+            for params_index in range(1, len(model_params), 2):
+                params[f"{params_index}.bias"] = model_params[params_index]
+    else:
+        for params_index in range(len(model_params)):
+            name = "weight" if params_index % 2 == 0 else "bias"
+            params[f"{params_index}.{name}"] = model_params[params_index]
+            
+    return params

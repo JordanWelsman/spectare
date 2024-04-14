@@ -1,9 +1,11 @@
+*.csv
 *.h5
 *.keras
 *.log
 *.png
 *.pth
 *__pycache__*
+.DS_Store
 .venv
 build
 dist

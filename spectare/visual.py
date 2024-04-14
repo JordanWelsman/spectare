@@ -59,7 +59,7 @@ def detect_framework() -> str:
 
     # Return the detected framework
     if torch_installed and tf_installed:
-        logger.warning(f"Both PyTorch and TensorFlow were detected in {t:.1f}s. Spectare will propably default to PyTorch.")
+        logger.warning(f"Both PyTorch and TensorFlow were detected in {t:.1f}s. Spectare will default to the root module of the passed model.")
         return "both"
     elif torch_installed:
         logger.info(f"PyTorch was detected in {t:.1f}s.")

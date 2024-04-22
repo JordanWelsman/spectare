@@ -322,6 +322,8 @@ def draw_random_network(num_layers: int, num_nodes: list[int], filename: str = "
     Args:
         num_layers (int): The number of layers in the network.
         num_nodes (list[int]): The number of nodes in each layer.
+        filename (str): The name of the image file to save the graph to.
+        colorblind (bool): Whether to use colorblind-friendly colors.
 
     Returns:
         None
@@ -402,7 +404,8 @@ def draw_network(
     and draws a directed graph of the network with the given parameters.
 
     Args:
-        model: The PyTorch or TensorFlow model to extract information from.
+        from_model: The PyTorch or TensorFlow model to extract information from.
+        from_file (str): The name of the PyTorch or TensorFlow file to load a model from.
         filename (str): The name of the image file to save the graph to.
         node_base_size (int): The base size of the nodes.
         node_size_scaling_factor (int): The scaling factor for the node size.

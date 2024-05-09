@@ -5,7 +5,7 @@ Contains all functions related to visualizing neural networks.
 """
 
 # External Visibility
-__all__ = ["calculate_node_size", "detect_framework", "detect_module_root", "draw_network", "draw_torch_network", "draw_keras_network", "draw_random_network", "get_torch_model_info", "get_keras_model_info", "get_torch_model_params", "get_keras_model_params"]
+__all__ = ["detect_framework", "draw_network", "draw_torch_network", "draw_keras_network", "draw_random_network", "get_cmap", "get_torch_model_info", "get_keras_model_info", "get_torch_model_params", "get_keras_model_params"]
 
 # Module imports
 import logging
@@ -35,6 +35,14 @@ logging.basicConfig(filename='spectare.log', filemode='w', level=logging.INFO, f
 def detect_framework() -> str:
     """
     Detects the installed deep learning framework.
+
+    Returns:
+        str: The detected deep learning framework.
+
+    Example:
+        ```python
+        framework = detect_framework()
+        ```
     """
     torch_installed = tf_installed = False
 
@@ -94,6 +102,18 @@ def calculate_color(parameter: float = 0.0, bounds: tuple = (-1, 1)) -> str:
     """
     Generates a hex color code based on the
     given parameter and its intended range.
+
+    Args:
+        parameter (float): The parameter to calculate the color for.
+        bounds (tuple): The bounds of the colormap.
+
+    Returns:
+        str: The calculated color.
+
+    Example:
+        ```python
+        color = calculate_color(0.5, (-1, 1))
+        ```
     """
     # Extract min and max values from range
     min_val, max_val = bounds[0], bounds[-1]
@@ -124,6 +144,18 @@ def calculate_cb_color(parameter: float = 0.0, bounds: tuple = (-1, 1)) -> str:
     """
     Generates a colorblind-friendly hex color code based
     on the given parameter and its intended range.
+
+    Args:
+        parameter (float): The parameter to calculate the color for.
+        bounds (tuple): The bounds of the colormap.
+
+    Returns:
+        str: The calculated color.
+
+    Example:
+        ```python
+        color = calculate_cb_color(0.5, (-1, 1))
+        ```
     """
     # Extract min and max values from range
     min_val, max_val = bounds[0], bounds[-1]
@@ -154,6 +186,18 @@ def decide_color(parameter: float = 0.0, colorblind: bool = False) -> str:
     """
     Decides which color to output
     depending on polarity of parameter.
+
+    Args:
+        parameter (float): The parameter to calculate the color for.
+        colorblind (bool): Whether to use colorblind-friendly colors.
+
+    Returns:
+        str: The calculated color.
+
+    Example:
+        ```python
+        color = decide_color(0.5, False)
+        ```
     """
     # Check if the colorblind flag is set
     if parameter < 0:
@@ -165,6 +209,20 @@ def decide_color(parameter: float = 0.0, colorblind: bool = False) -> str:
     
 
 def float_to_red_green_color(value):
+    """
+    Converts a float value to a red-green color.
+
+    Args:
+        value (float): The value to convert to a color.
+
+    Returns:
+        str: The RGB color as a hex value.
+
+    Example:
+        ```python
+        color = float_to_red_green_color(0.5)
+        ```
+    """
     # Ensure value is within range [-1, 1]
     value = max(-1, min(1, value))
     
@@ -182,6 +240,20 @@ def float_to_red_green_color(value):
 
 
 def float_to_red_blue_color(value):
+    """
+    Converts a float value to a red-blue color.
+
+    Args:
+        value (float): The value to convert to a color.
+
+    Returns:
+        str: The RGB color as a hex value.
+
+    Example:
+        ```python
+        color = float_to_red_blue_color(0.5)
+        ```
+    """
     # Ensure value is within range [-1, 1]
     value = max(-1, min(1, value))
     
@@ -210,6 +282,11 @@ def calculate_color_with_twoslope(value: float, norm: Normalize, colorblind: boo
 
     Returns:
         str: The calculated color.
+
+    Example:
+        ```python
+        color = calculate_color_with_twoslope(0.5, norm, False, True)
+        ```
     """
     # Handle input neurons
     # if value == 0.0:
@@ -872,6 +949,11 @@ def get_torch_model_info(model) -> dict:
 
     Returns:
         tuple: A tuple containing the model's architecture and parameters.
+
+    Example:
+        ```python
+        model_info = get_torch_model_info(model)
+        ```
     """
     # Get Input & Output Sizes
     input_size = model[0].in_features
@@ -900,6 +982,11 @@ def get_keras_model_info(model) -> dict:
 
     Returns:
         tuple: A tuple containing the model's architecture and parameters.
+
+    Example:
+        ```python
+        model_info = get_keras_model_info(model)
+        ```
     """
     # Get Input & Output Sizes
     model_weights = model.get_weights()
@@ -926,6 +1013,18 @@ def get_keras_model_info(model) -> dict:
 def get_torch_model_params(model, param_type: str = "all") -> dict:
     """
     Returns the weights or biases of the given model.
+
+    Args:
+        model: The PyTorch model to extract parameters from.
+        param_type (str): The type of parameter to extract.
+
+    Returns:
+        dict: The extracted parameters.
+
+    Example:
+        ```python
+        params = get_torch_model_params(model, "weight")
+        ```
     """
     # Check if the parameter type is valid
     assert param_type in ["weight", "bias", "all"], f"Invalid parameter type: {param_type}"
@@ -958,6 +1057,11 @@ def get_keras_model_params(model, param_type: str = "all") -> dict:
         
     Returns:
         dict: The extracted parameters.
+
+    Example:
+        ```python
+        params = get_keras_model_params(model, "weight")
+        ```
     """
     # Check if the parameter type is valid
     assert param_type in ["weight", "bias", "all"], f"Invalid parameter type: {param_type}"

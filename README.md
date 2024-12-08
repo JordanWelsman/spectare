@@ -8,6 +8,8 @@ _A PyTorch visualisation and interpretability framework._
 
 ## Installation
 
+> NOTE: I am currently working on staging the library for PIP. The command will not work yet as a result.
+
 You can install `Spectare` via pip:
 
 ```bash

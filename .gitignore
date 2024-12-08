@@ -1,5 +1,15 @@
+*.csv
+*.h5
+*.keras
+*.log
+*.png
+*.pth
+*__pycache__*
+.DS_Store
 .venv
 build
 dist
 spectare.egg-info
 test.py
+test_tf.py
+test_torch.py

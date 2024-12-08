@@ -5,15 +5,19 @@ Setup file for the package.
 
 # Module Imports
 from setuptools import setup, find_packages
+from spectare import __version__
 
+
+# Define list of submodules
+py_modules = ["spectare"]
 
 # Module Setup
 setup(
     name="spectare",
-    version="0.0.0",
+    version=__version__,
     author="Jordan Welsman",
     author_email="jordan.welsman@outlook.com",
-    description="A PyTorch visualisation and interpretability framework.",
+    description="A neural network visualisation and interpretability framework.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/JordanWelsman/spectare",
@@ -34,8 +38,13 @@ setup(
         "Topic :: Scientific/Engineering :: Visualization",
         "Topic :: Utilities"
     ],
+    package_data = {
+        'spectare': py_modules
+        },
     python_requires='>=3.10',
     install_requires=[
-        "networkx>=3.2.1"
+        "matplotlib>=3.8.4",
+        "networkx>=3.2.1",
+        "numpy>=1.26.4"
     ]
 )

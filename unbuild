@@ -17,6 +17,8 @@ then
     rm -rf dist # remove distribution directory if exists
     rm -rf spectare.egg-info # remove egg info directory if exists
     find . -name __pycache__ -type d -print0|xargs -0 rm -r -- # remove all pycache directories
+    rm -rf spectare.log # remove log file if exists
+    rm -rf "Network Graph.png" # remove network graph if exists
     echo "Project successfully unbuilt."
 else
     echo "Operation aborted."
